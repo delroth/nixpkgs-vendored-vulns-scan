@@ -30,7 +30,7 @@ jobs:
         poetry -C vendoredvulns/frontend install --no-interaction --no-root
 
     - name: Check scanner coding style
-      run: poetry run -C vendoredvulns/scanner black --check vendoredvulns/scanner
+      run: poetry run -C vendoredvulns/scanner black --check --preview vendoredvulns/scanner
 
     - name: Check frontend coding style
-      run: poetry run -C vendoredvulns/frontend black --check vendoredvulns/frontend
+      run: poetry run -C vendoredvulns/frontend black --check --preview vendoredvulns/frontend
