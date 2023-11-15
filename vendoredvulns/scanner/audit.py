@@ -9,6 +9,8 @@ import pathlib
 import subprocess
 import tempfile
 
+from . import nix
+
 
 @dataclasses.dataclass
 class Vuln:
@@ -19,7 +21,7 @@ class Vuln:
 
 @dataclasses.dataclass
 class Result:
-    pkg: str
+    pkg: nix.Package
     success: bool
     vulns: list[Vuln]
 
@@ -31,7 +33,7 @@ def audit_cargo(pkg, *, cargo_audit_path):
         "--quiet",
         "--json",
         "-f",
-        pkg["lock"],
+        pkg.raw["lock"],
     ]
     out = subprocess.run(cmd, capture_output=True)
 
@@ -42,11 +44,11 @@ def audit_cargo(pkg, *, cargo_audit_path):
     except json.JSONDecodeError:
         logging.error(
             "%s: cargo-audit returned unexpected results. stdout: %r, stderr: %r",
-            pkg["attr"],
+            pkg.name,
             out.stdout,
             out.stderr,
         )
-        return Result(pkg["attr"], False, [])
+        return Result(pkg, False, [])
 
     vulns = []
     for jvuln in j.get("vulnerabilities", {}).get("list", []):
@@ -55,7 +57,7 @@ def audit_cargo(pkg, *, cargo_audit_path):
         impacts = jvuln["advisory"]["package"]
         vulns.append(Vuln(primary_id, aliases, impacts))
 
-    return Result(pkg["attr"], True, vulns)
+    return Result(pkg, True, vulns)
 
 
 def audit_npm(pkg, *, npm_path):
@@ -63,7 +65,7 @@ def audit_npm(pkg, *, npm_path):
     with tempfile.TemporaryDirectory(prefix="vulnpackages-scanner-npm.") as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
         package_lock_link = tmpdir / "package-lock.json"
-        package_lock_link.symlink_to(pkg["lock"])
+        package_lock_link.symlink_to(pkg.raw["lock"])
 
         cmd = [
             npm_path,
@@ -85,24 +87,24 @@ def audit_npm(pkg, *, npm_path):
         impacts = jvuln["name"]
         vulns.append(Vuln(primary_id, aliases, impacts))
 
-    return Result(pkg["attr"], True, vulns)
+    return Result(pkg, True, vulns)
 
 
 def audit_package(pkg, *, cargo_audit_path, npm_path):
-    logging.debug("Auditing package %r, type %r", pkg["attr"], pkg["type"])
+    logging.debug("Auditing package %r, type %r", pkg.name, pkg.type)
 
     funcs = {
         "cargo": functools.partial(audit_cargo, cargo_audit_path=cargo_audit_path),
         "npm": functools.partial(audit_npm, npm_path=npm_path),
     }
 
-    func = funcs.get(pkg["type"])
+    func = funcs.get(pkg.type)
     if func is None:
-        logging.error("%s: unknown package type %r, skipping", pkg["attr"], pkg["type"])
-        return Result(pkg["attr"], False, [])
+        logging.error("%s: unknown package type %r, skipping", pkg.name, pkg.type)
+        return Result(pkg, False, [])
 
     try:
         return func(pkg)
     except Exception:
-        logging.exception("%s: Error while auditing", pkg["attr"])
-        return Result(pkg["attr"], False, [])
+        logging.exception("%s: Error while auditing", pkg.name)
+        return Result(pkg, False, [])

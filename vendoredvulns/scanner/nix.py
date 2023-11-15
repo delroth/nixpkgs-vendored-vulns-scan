@@ -2,12 +2,21 @@
 # a given nixpkgs.
 
 import contextlib
+import dataclasses
 import importlib.resources
 import json
 import logging
 import pathlib
 import subprocess
 import tempfile
+
+
+@dataclasses.dataclass
+class Package:
+    name: str
+    attr_path: list[str]
+    type: str
+    raw: dict
 
 
 def instantiate(*, tmpdir, nixpkgs_path, nix_instantiate_path, single):
@@ -93,6 +102,18 @@ def extract_packages_with_lockfiles(
         )
 
         with output_path.open() as output_fp:
-            yield json.load(output_fp)
+            j = json.load(output_fp)
+
+            packages = []
+            for jpkg in j:
+                packages.append(
+                    Package(
+                        name=".".join(jpkg["attr"]),
+                        attr_path=jpkg["attr"],
+                        type=jpkg["type"],
+                        raw=jpkg,
+                    )
+                )
+            yield packages
 
     gc(nix_store_path=nix_store_path)
