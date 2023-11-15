@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "vendored-vulns-scanner"
+version = "0.1.0"
+description = "Backend component for the nixpkgs vendored vulnerabilities dashboard."
+authors = ["Pierre Bourdon <delroth@gmail.com>"]
+license = "MIT"
+packages = [{include = "vendoredvulns/scanner", from = "../.."}]
+
+[tool.poetry.scripts]
+vendored-vulns-scanner = "vendoredvulns.scanner.scanner:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+tqdm = "^4.66.1"
+requests = "^2.31.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.11.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
