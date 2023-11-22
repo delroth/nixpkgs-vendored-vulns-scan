@@ -30,6 +30,8 @@ def instantiate(*, tmpdir, nixpkgs_path, nix_instantiate_path, single):
     ) as nix_expr_file:
         cmd = [
             str(nix_instantiate_path),
+            "-I",
+            f"nixpkgs={nixpkgs_path}",
             "--add-root",
             str(drv_path),
             str(nix_expr_file),
