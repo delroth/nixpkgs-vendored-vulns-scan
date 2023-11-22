@@ -130,6 +130,13 @@ def main():
 
     output.summarize(audit_results)
 
+    if flags.output is not None:
+        output.output_to_file(audit_results, output_path=flags.output)
+        logging.info("Output written to %r", flags.output)
+
+    if flags.upload_api_endpoint is not None:
+        logging.error("API upload not yet implemented")
+
 
 if __name__ == "__main__":
     main()
