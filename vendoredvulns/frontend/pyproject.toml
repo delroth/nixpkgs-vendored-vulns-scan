@@ -7,8 +7,13 @@ license = "MIT"
 readme = "../../README.md"
 packages = [{include = "vendoredvulns/frontend", from = "../.."}]
 
+[tool.poetry.scripts]
+vendoredvulns-frontend-manage = "vendoredvulns.frontend.manage:main"
+
 [tool.poetry.dependencies]
 python = "^3.10"
+django = "^4.2.7"
+django-debug-toolbar = "^4.2.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.11.0"
