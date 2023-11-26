@@ -17,6 +17,17 @@ SECRET_KEY = os.urandom(32)
 DEBUG = True
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
+if hosts := os.environ.get("ALLOWED_HOSTS"):
+    ALLOWED_HOSTS += hosts.split(",")
+
+GITHUB_API_TOKEN = ""
+GITHUB_EXTRA_USERS = set()
+GITHUB_DENYLISTED_USERS = set()
+
+# The token in "Authorization: Token <token>" for API endpoints.
+API_SECRET_TOKEN = "changeme"
+
 INTERNAL_IPS = ["127.0.0.1"]
 
 INSTALLED_APPS = [
@@ -26,6 +37,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "simple_history",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.github",
+    "rest_framework",
     "vendoredvulns.frontend",
 ]
 
@@ -37,7 +54,33 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
+
+AUTHENTICATION_BACKENDS = [
+    # Local users: superusers, etc.
+    "django.contrib.auth.backends.ModelBackend",
+    # GitHub OAuth. The GitHub app config must be added in the Django admin.
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+# Forbid local allauth account creation.
+ACCOUNT_ADAPTER = "vendoredvulns.frontend.auth.NoSignupAccountAdapter"
+SOCIALACCOUNT_ADAPTER = (
+    "vendoredvulns.frontend.auth.GithubNixosTeamSocialAccountAdapter"
+)
+SOCIALACCOUNT_PROVIDERS = {
+    "github": {
+        "EMAIL_AUTHENTICATION": False,
+        "EMAIL_AUTHENTICATION_AUTO_CONNECT": False,
+        "EMAIL_REQUIRED": False,
+        "SCOPE": [
+            "read:user",
+            # "user:email",
+        ],
+    }
+}
 
 ROOT_URLCONF = "vendoredvulns.frontend.urls"
 
